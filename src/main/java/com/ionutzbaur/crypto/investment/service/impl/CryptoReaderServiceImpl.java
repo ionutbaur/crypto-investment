@@ -104,7 +104,7 @@ public class CryptoReaderServiceImpl implements CryptoReaderService {
         return normalizedRangePairs.stream()
                 .max(Comparator.comparing(Pair::getRight))
                 .map(Pair::getLeft)
-                .orElseThrow(() -> new CryptoInvestmentException("Crypto has no data for the given day"));
+                .orElse(null);
     }
 
     private BigDecimal computeNormalizedRange(Supplier<Stream<CsvCrypto>> streamSupplier) {
