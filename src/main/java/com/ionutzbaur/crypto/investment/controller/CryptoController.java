@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 public class CryptoController {
@@ -44,7 +45,9 @@ public class CryptoController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not a valid date! Format should be YYYY-MM-DD");
         }
 
-        return cryptoReaderService.getHighestNormalizedRange(localDate);
+        return Optional
+                .ofNullable(cryptoReaderService.getHighestNormalizedRange(localDate))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No available data for the given day."));
     }
 
 }
