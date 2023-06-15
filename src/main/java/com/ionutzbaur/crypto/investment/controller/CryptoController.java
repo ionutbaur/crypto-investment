@@ -3,12 +3,10 @@ package com.ionutzbaur.crypto.investment.controller;
 import com.ionutzbaur.crypto.investment.domain.CryptoType;
 import com.ionutzbaur.crypto.investment.domain.CsvCrypto;
 import com.ionutzbaur.crypto.investment.domain.StatisticType;
-import com.ionutzbaur.crypto.investment.service.CryptoReaderService;
+import com.ionutzbaur.crypto.investment.service.CryptoService;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
@@ -19,23 +17,27 @@ import java.util.Optional;
 @RestController
 public class CryptoController {
 
-    private final CryptoReaderService cryptoReaderService;
+    private final CryptoService cryptoService;
 
-    public CryptoController(CryptoReaderService cryptoReaderService) {
-        this.cryptoReaderService = cryptoReaderService;
+    public CryptoController(CryptoService cryptoService) {
+        this.cryptoService = cryptoService;
     }
 
-    @GetMapping("/stat/{crypto}")
+    @Operation(description = "Get a the requested statistic for a certain crypto (oldest/newest/min/max values)")
+    @GetMapping("/stats/{crypto}")
     public CsvCrypto getStatisticValues(@PathVariable CryptoType crypto,
                                         @RequestParam(value = "type", defaultValue = "NEWEST") StatisticType statisticType) {
-        return cryptoReaderService.getStatistic(crypto, statisticType);
+        return cryptoService.getStatistic(crypto, statisticType);
     }
 
+    @Operation(description = "Get a descending sorted list of all the cryptos, " +
+            "comparing the normalized range (max-min)/min")
     @GetMapping("/normalize-desc")
     public List<CsvCrypto> getNormalizedDesc() {
-        return cryptoReaderService.getNormalizedDesc();
+        return cryptoService.getNormalizedDesc();
     }
 
+    @Operation(description = "Get the crypto symbol with the highest normalized range for a specific day")
     @GetMapping("/normalize-highest/{day}")
     public CryptoType getHighestNormalizedRange(@PathVariable String day) {
         LocalDate localDate;
@@ -46,8 +48,15 @@ public class CryptoController {
         }
 
         return Optional
-                .ofNullable(cryptoReaderService.getHighestNormalizedRange(localDate))
+                .ofNullable(cryptoService.getHighestNormalizedRange(localDate))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No available data for the given day."));
+    }
+
+    @Operation(description = "Scale the service by adding new cryptos and/or adding data for more timeframes to existing cryptos. " +
+            "Important note: New cryptos are not supported unless they are first added in the system.")
+    @PutMapping("/crypto-values")
+    public void addCrypto(@RequestBody List<CsvCrypto> cryptoValues) {
+        cryptoService.addCrypto(cryptoValues);
     }
 
 }
