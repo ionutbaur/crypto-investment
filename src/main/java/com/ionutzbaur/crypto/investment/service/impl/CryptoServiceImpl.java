@@ -4,8 +4,8 @@ import com.ionutzbaur.crypto.investment.domain.CryptoType;
 import com.ionutzbaur.crypto.investment.domain.CsvCrypto;
 import com.ionutzbaur.crypto.investment.domain.StatisticType;
 import com.ionutzbaur.crypto.investment.exception.CryptoInvestmentException;
-import com.ionutzbaur.crypto.investment.service.CryptoReaderService;
-import com.ionutzbaur.crypto.investment.util.CryptoReaderUtil;
+import com.ionutzbaur.crypto.investment.service.CryptoService;
+import com.ionutzbaur.crypto.investment.util.CsvCryptoUtil;
 import com.opencsv.bean.CsvToBean;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -24,17 +23,21 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
-public class CryptoReaderServiceImpl implements CryptoReaderService {
+public class CryptoServiceImpl implements CryptoService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CryptoReaderServiceImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CryptoServiceImpl.class);
 
+    /**
+     * Reads the crypto info from all the CSV files.
+     * @return a list that represents the deserialized info from CSVs
+     */
     @Override
     public List<CsvCrypto> getAllCryptos() {
         List<CsvCrypto> allCryptos = new LinkedList<>();
         Arrays.stream(CryptoType.values())
                 .forEach(cryptoType -> {
                     try {
-                        final CsvToBean<CsvCrypto> crypto = CryptoReaderUtil.readCryptoFromCsv(cryptoType);
+                        final CsvToBean<CsvCrypto> crypto = CsvCryptoUtil.readCryptoFromCsv(cryptoType);
                         allCryptos.addAll(crypto.parse());
                     } catch (Exception e) {
                         LOGGER.error("Cannot retrieve info for " + cryptoType, e);
@@ -44,6 +47,10 @@ public class CryptoReaderServiceImpl implements CryptoReaderService {
         return allCryptos;
     }
 
+    /**
+     * Calculates the normalized range of all cryptos by formula (max-min)/min
+     * @return a descending sorted list comparing the calculated normalized range
+     */
     @Override
     public List<CsvCrypto> getNormalizedDesc() {
         final Supplier<Stream<CsvCrypto>> streamSupplier = getAllCryptos()::stream;
@@ -54,10 +61,16 @@ public class CryptoReaderServiceImpl implements CryptoReaderService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Computes statistics
+     * @param cryptoType
+     * @param statisticType
+     * @return the info to match the requested statistic
+     */
     @Override
     public CsvCrypto getStatistic(CryptoType cryptoType, StatisticType statisticType) {
         try {
-            final CsvToBean<CsvCrypto> crypto = CryptoReaderUtil.readCryptoFromCsv(cryptoType);
+            final CsvToBean<CsvCrypto> crypto = CsvCryptoUtil.readCryptoFromCsv(cryptoType);
             final Supplier<Stream<CsvCrypto>> streamSupplier = crypto::stream;
 
             Optional<CsvCrypto> optionalCSVCrypto;
@@ -87,6 +100,11 @@ public class CryptoReaderServiceImpl implements CryptoReaderService {
         return null;
     }
 
+    /**
+     * Computes the highest normalized range for a specific day.
+     * @param day the day for witch the highest normalized range is computed
+     * @return the symbol of the crypto
+     */
     @Override
     public CryptoType getHighestNormalizedRange(LocalDate day) {
         final List<Pair<CryptoType, BigDecimal>> normalizedRangePairs = new ArrayList<>();
@@ -105,6 +123,19 @@ public class CryptoReaderServiceImpl implements CryptoReaderService {
                 .max(Comparator.comparing(Pair::getRight))
                 .map(Pair::getLeft)
                 .orElse(null);
+    }
+
+    /**
+     * Adds crypto info. If a csv file for the new crypto does not exist, it will be created,
+     * otherwise the info will be appended at the end of the corresponding csv file content.
+     * In order to add a new crypto, make sure it is supported by adding it first to {@link CryptoType} enum.
+     * @param cryptoValues list of cryptos to be added
+     */
+    @Override
+    public void addCrypto(List<CsvCrypto> cryptoValues) {
+        cryptoValues.stream()
+                .collect(Collectors.groupingBy(CsvCrypto::getSymbol))
+                .forEach((cryptoType, csvCryptoList) -> CsvCryptoUtil.writeCryptoToCsv(csvCryptoList, cryptoType));
     }
 
     private BigDecimal computeNormalizedRange(Supplier<Stream<CsvCrypto>> streamSupplier) {

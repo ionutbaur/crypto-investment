@@ -1,5 +1,6 @@
 package com.ionutzbaur.crypto.investment.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.opencsv.bean.CsvBindByName;
 
 import java.math.BigDecimal;
@@ -28,6 +29,7 @@ public class CsvCrypto {
         return price;
     }
 
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     public Instant getPrettyTimestamp() {
         return Instant.ofEpochMilli(timestamp);
     }

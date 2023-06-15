@@ -6,5 +6,7 @@ public enum CryptoType {
     DOGE,
     ETH,
     LTC,
-    XRP
+    XRP,
+    // TODO: add here extra new crypto type before trying to add it through CryptoService, like below
+    NEW_CRYPTO
 }
