@@ -40,7 +40,7 @@ public class CryptoServiceImpl implements CryptoService {
                         final CsvToBean<CsvCrypto> crypto = CsvCryptoUtil.readCryptoFromCsv(cryptoType);
                         allCryptos.addAll(crypto.parse());
                     } catch (Exception e) {
-                        LOGGER.error("Cannot retrieve info for " + cryptoType, e);
+                        LOGGER.error("Cannot retrieve info for {}", cryptoType, e);
                     }
                 });
 
@@ -60,7 +60,7 @@ public class CryptoServiceImpl implements CryptoService {
 
         return streamSupplier.get()
                 .sorted(comparator.reversed())
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -76,23 +76,13 @@ public class CryptoServiceImpl implements CryptoService {
             final CsvToBean<CsvCrypto> crypto = CsvCryptoUtil.readCryptoFromCsv(cryptoType);
             final Supplier<Stream<CsvCrypto>> streamSupplier = crypto::stream;
 
-            Optional<CsvCrypto> optionalCSVCrypto;
-            switch (statisticType) {
-                case OLDEST:
-                    optionalCSVCrypto = computeOldestTimestampOptional(streamSupplier);
-                    break;
-                case NEWEST:
-                    optionalCSVCrypto = computeNewestTimestampOptional(streamSupplier);
-                    break;
-                case MIN:
-                    optionalCSVCrypto = computeMinPriceOptional(streamSupplier);
-                    break;
-                case MAX:
-                    optionalCSVCrypto = computeMaxPriceOptional(streamSupplier);
-                    break;
-                default:
-                    throw new CryptoInvestmentException("Statistic not yet implemented");
-            }
+            Optional<CsvCrypto> optionalCSVCrypto = switch (statisticType) {
+                case OLDEST -> computeOldestTimestampOptional(streamSupplier);
+                case NEWEST -> computeNewestTimestampOptional(streamSupplier);
+                case MIN -> computeMinPriceOptional(streamSupplier);
+                case MAX -> computeMaxPriceOptional(streamSupplier);
+                default -> throw new CryptoInvestmentException("Statistic not yet implemented");
+            };
 
             return optionalCSVCrypto
                     .orElseThrow(() -> new CryptoInvestmentException(String.format("Cannot compute %s values for %s", statisticType, cryptoType)));
