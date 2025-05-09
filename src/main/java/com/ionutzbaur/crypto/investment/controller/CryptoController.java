@@ -54,7 +54,7 @@ public class CryptoController {
 
     @Operation(description = "Scale the service by adding new cryptos and/or adding data for more timeframes to existing cryptos. " +
             "Important note: New cryptos are not supported unless they are first added in the system.")
-    @PutMapping("/crypto-values")
+    @PostMapping("/crypto-values")
     public void addCrypto(@RequestBody List<CsvCrypto> cryptoValues) {
         cryptoService.addCrypto(cryptoValues);
     }

@@ -10,7 +10,7 @@ import com.opencsv.bean.CsvToBean;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Component
+@Service
 public class CryptoServiceImpl implements CryptoService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CryptoServiceImpl.class);
